@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'national_id',
     ];
 
     /**
@@ -45,4 +46,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    // Override برای استفاده از national_id به جای email برای لاگین
+       public function getAuthIdentifierName()
+       {
+           return 'national_id';
+       }
 }
