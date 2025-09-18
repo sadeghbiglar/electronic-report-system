@@ -12,3 +12,4 @@ Route::get('/logout', function () {
     request()->session()->regenerateToken();
     return redirect('/login');
 });
+Volt::route('/units', 'units.index')->middleware('auth')->name('units.index');

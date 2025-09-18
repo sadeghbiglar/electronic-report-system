@@ -51,4 +51,5 @@ class User extends Authenticatable
        {
            return 'national_id';
        }
+       public function units() { return $this->belongsToMany(Unit::class, 'user_unit')->withPivot('role'); }
 }
