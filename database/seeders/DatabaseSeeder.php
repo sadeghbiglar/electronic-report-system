@@ -24,5 +24,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UnitTypeSeeder::class);
         $this->call(UnitSeeder::class);
         $this->call(UnitTypeRelationshipSeeder::class);
+        $this->call(PersonSeeder::class);
     }
 }
