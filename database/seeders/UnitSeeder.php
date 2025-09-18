@@ -16,9 +16,9 @@ class UnitSeeder extends Seeder
 
         $ministry = Unit::create(['name' => 'وزارت بهداشت', 'type_id' => $types['ministry'], 'slug' => 'ministry-of-health']);
 
-        Unit::create(['name' => 'دانشگاه علوم پزشکی تهران', 'type_id' => $types['university'], 'parent_id' => $ministry->id, 'location_id' => $location->id, 'slug' => 'tehran-university']);
+        $university=Unit::create(['name' => 'دانشگاه علوم پزشکی تهران', 'type_id' => $types['university'], 'parent_id' => $ministry->id, 'location_id' => $location->id, 'slug' => 'tehran-university']);
 
-        $deputy = Unit::create(['name' => 'معاونت بهداشت', 'type_id' => $types['deputy'], 'parent_id' => $ministry->id, 'location_id' => $location->id, 'slug' => 'health-deputy']);
+        $deputy = Unit::create(['name' => 'معاونت بهداشت', 'type_id' => $types['deputy'], 'parent_id' => $university->id, 'location_id' => $location->id, 'slug' => 'health-deputy']);
 
         $network = Unit::create(['name' => 'شبکه بهداشت و درمان تهران', 'type_id' => $types['network'], 'parent_id' => $deputy->id, 'location_id' => $location->id, 'slug' => 'tehran-network']);
 

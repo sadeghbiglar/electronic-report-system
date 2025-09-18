@@ -5,6 +5,7 @@ use Livewire\Volt\Component;
 use App\Models\Unit;
 use App\Models\Location;
 use App\Models\UnitType;
+use App\Models\UnitTypeRelationship; // اضافه کردن import
 use Livewire\WithPagination;
 use Illuminate\Validation\Rule;
 use Mary\Traits\Toast;
@@ -29,8 +30,27 @@ class extends Component
         $this->resetPage(); // ریست صفحه به ۱ هنگام جستجو
     }
 
+    public function updatedTypeId($value)
+    {
+        $this->parent_id = null; // ریست بالادستی هنگام تغییر نوع
+    }
+
     public function with(): array
     {
+        $allowedParents = [];
+        if ($this->type_id) {
+            $allowedParentTypeIds = UnitTypeRelationship::where('child_type_id', $this->type_id)
+                ->pluck('parent_type_id');
+            $allowedParents = Unit::whereIn('type_id', $allowedParentTypeIds)
+                ->get()
+                ->map(fn($unit) => ['value' => $unit->id, 'label' => $unit->name])
+                ->toArray();
+        } else {
+            $allowedParents = Unit::all()
+                ->map(fn($unit) => ['value' => $unit->id, 'label' => $unit->name])
+                ->toArray();
+        }
+
         return [
             'description' => 'مدیریت واحدهای سازمانی',
             'keywords' => 'واحدها, بهداشت, مدیریت',
@@ -39,7 +59,7 @@ class extends Component
                 ['key' => 'type.label', 'label' => 'نوع', 'class' => 'w-20'],
                 ['key' => 'parent.name', 'label' => 'بالادستی', 'class' => 'w-20 hidden xl:table-cell'],
                 ['key' => 'location.name', 'label' => 'موقعیت', 'class' => 'w-20 hidden xl:table-cell'],
-                
+                ['key' => 'actions', 'label' => 'عملیات', 'class' => 'w-24'],
             ],
             'units' => Unit::query()
                 ->with(['type', 'parent', 'location'])
@@ -47,7 +67,7 @@ class extends Component
                 ->orderBy(...array_values($this->sortBy))
                 ->paginate(5),
             'types' => UnitType::all()->map(fn($type) => ['value' => $type->id, 'label' => $type->label])->toArray(),
-            'parents' => Unit::all()->map(fn($unit) => ['value' => $unit->id, 'label' => $unit->name])->toArray(),
+            'parents' => $allowedParents, // استفاده از بالادستی‌های مجاز
             'locations' => Location::all()->map(fn($location) => ['value' => $location->id, 'label' => $location->name])->toArray(),
         ];
     }
@@ -76,7 +96,18 @@ class extends Component
             'type_id' => ['required', 'exists:unit_types,id'],
             'parent_id' => [
                 'nullable', 'exists:units,id',
-                Rule::notIn([$this->editingUnit?->id ?? 0]), // چک parent
+                Rule::notIn([$this->editingUnit?->id ?? 0]), // جلوگیری از انتخاب خودش
+                function ($attribute, $value, $fail) {
+                    if ($value && $this->type_id) {
+                        $parent = Unit::find($value);
+                        $allowedParentTypeIds = UnitTypeRelationship::where('child_type_id', $this->type_id)
+                            ->pluck('parent_type_id')
+                            ->toArray();
+                        if ($parent && !in_array($parent->type_id, $allowedParentTypeIds)) {
+                            $fail('واحد بالادستی انتخاب‌شده مجاز نیست.');
+                        }
+                    }
+                },
             ],
             'location_id' => ['nullable', 'exists:locations,id'],
         ];
@@ -157,7 +188,7 @@ class extends Component
     <x-modal wire:model="modal" title="{{ $editing ? 'ویرایش واحد' : 'ایجاد واحد' }}" separator persistent>
         <x-form wire:submit="save" class="space-y-4">
             <x-input label="نام" wire:model="name" required class="w-full input-bordered bg-white text-black" />
-            <x-select label="نوع" wire:model="type_id" :options="$types" option-value="value" option-label="label" required class="w-full select-bordered bg-white text-black" placeholder="انتخاب نوع" />
+            <x-select label="نوع" wire:model.live="type_id" :options="$types" option-value="value" option-label="label" required class="w-full select-bordered bg-white text-black" placeholder="انتخاب نوع" />
             <x-select label="بالادستی" wire:model="parent_id" :options="$parents" option-value="value" option-label="label" class="w-full select-bordered bg-white text-black" placeholder="انتخاب بالادستی" />
             <x-select label="موقعیت" wire:model="location_id" :options="$locations" option-value="value" option-label="label" class="w-full select-bordered bg-white text-black" placeholder="انتخاب موقعیت" />
             <div class="flex justify-end gap-2">
